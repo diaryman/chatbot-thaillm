@@ -1,0 +1,29 @@
+# Map of Thailand
+
+## Key Locations
+- **ราชบุรี**
+- **สมุทรสงคราม**
+- **เพชรบุรี**
+- **ประจวบคีรีขันธ์**
+
+## Color-Coded Labels
+- The map uses a purple color to represent the locations marked.
+
+## Footnotes and Annotations
+- The text "ศาลปกครองเพชรบุรี มีเขตอำนาจ ดังนี้" (Court of Administrative Justice of Phetchaburi Province has the following area) appears near the highlighted region.
+
+## Contact Information
+- Address: ตั้งอยู่ที่ 980/98 ถนนเพชรเกษม ตำบลชะอำ
+- District: อำเภอชะอำ
+- Province: เพชรบุรี
+- Phone: 0 3270 9400
+
+## Graphical Elements
+- The map includes a legend indicating that the purple areas represent the locations of interest.
+- There are icons representing various institutions and landmarks.
+
+## Text Recognition
+- Thai text labels various locations and institutions, including "ศาลปกครองเพชรบุรี" (Court of Administrative Justice of Phetchaburi Province), "สำนักงานใหญ่" (Headquarters), "สำนักงาน" (Office), "ไทยพาณิชย์" (Thai Post), and "โทรศัพท์" (Telephone).
+
+## Final Summary
+The image presents a map of a region in Thailand, highlighting the locations of various administrative institutions and contact information for the Court of Administrative Justice of Phetchaburi Province. The map is designed to show the geographical layout of the area, with purple areas indicating the boundaries of interest. Contact details for the court are provided, along with the address and phone number.

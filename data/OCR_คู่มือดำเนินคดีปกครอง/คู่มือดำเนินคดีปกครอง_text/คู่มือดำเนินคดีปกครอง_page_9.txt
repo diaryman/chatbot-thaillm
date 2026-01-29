@@ -1,0 +1,24 @@
+# Legal Icons
+
+## Hexagon Layout
+- The image features a purple background with several hexagons arranged around a central point.
+- Each hexagon contains a different icon related to law and justice.
+
+## Icons
+| Icon | Description |
+| --- | --- |
+| 🏛️ | Courthouse |
+| 📞 | Phone case |
+| 📄 | Document |
+| 🏛️ | Courthouse |
+| 📞 | Phone case |
+| 📄 | Document |
+| 🏛️ | Courthouse |
+| 📞 | Phone case |
+| 📄 | Document |
+| 🏛️ | Courthouse |
+| 📞 | Phone case |
+| 📄 | Document |
+
+## Footnotes
+- The text "Legal Icons" is visible at the top of the image.

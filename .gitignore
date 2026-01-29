@@ -1,0 +1,19 @@
+# Secrets
+.streamlit/secrets.toml
+credentials.json
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+nohup.out
+
+# Data & Backups
+data/*.db
+backup_old_versions/

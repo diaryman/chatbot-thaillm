@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  smart-court-ai:
+    build: .
+    container_name: smart_court_ai
+    restart: always
+    ports:
+      - "8502:8501" # Map host port 8502 to container port 8501
+    volumes:
+      - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml # Mount secrets
+      - ./data:/app/data # Persist SQLite Database
+    environment:
+      - PYTHONUNBUFFERED=1

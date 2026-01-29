@@ -1,0 +1,11 @@
+# Facebook QR Code
+
+## Instructions
+- Scan the QR code using your smartphone.
+- After scanning, you will be directed to the Facebook app.
+- Log in to your Facebook account and navigate to the "Facebook at Work" app.
+- You can now follow the instructions on the screen.
+
+## Important Note
+- This QR code is for Facebook at Work purposes only.
+- Do not scan the QR code if you do not want to follow the instructions.
