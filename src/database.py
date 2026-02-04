@@ -28,7 +28,8 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             username TEXT NOT NULL,
             question TEXT NOT NULL,
-            knowledge_base TEXT
+            knowledge_base TEXT,
+            user_comment TEXT
         )
     """)
     
@@ -45,16 +46,45 @@ def init_db():
         )
     """)
     
-    # Feedback table
+    # Feedback table (Updated with 5 dimensions + comment)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS feedback (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             response_id INTEGER NOT NULL,
-            feedback_type TEXT NOT NULL,
+            feedback_type TEXT, -- Legacy, kept for compatibility
+            score_accuracy INTEGER,
+            score_completeness INTEGER,
+            score_detail INTEGER,
+            score_usefulness INTEGER,
+            score_satisfaction INTEGER,
+            comment TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (response_id) REFERENCES responses(id) ON DELETE CASCADE
         )
     """)
+    
+    # Migration: Add columns if they don't exist
+    # 1. Feedback table columns
+    columns_to_add = [
+        ("score_accuracy", "INTEGER"),
+        ("score_completeness", "INTEGER"),
+        ("score_detail", "INTEGER"),
+        ("score_usefulness", "INTEGER"),
+        ("score_satisfaction", "INTEGER"),
+        ("comment", "TEXT")
+    ]
+    
+    for col_name, col_type in columns_to_add:
+        try:
+            cursor.execute(f"ALTER TABLE feedback ADD COLUMN {col_name} {col_type}")
+        except sqlite3.OperationalError:
+            pass
+
+    # 2. Conversations table columns
+    try:
+        cursor.execute("ALTER TABLE conversations ADD COLUMN user_comment TEXT")
+    except sqlite3.OperationalError:
+        pass
     
     # Create indexes for better query performance
     cursor.execute("""
@@ -72,12 +102,46 @@ def init_db():
         ON feedback(response_id)
     """)
     
+    # Explicit Migration Check using PRAGMA
+    # 1. Check conversations table
+    cursor.execute("PRAGMA table_info(conversations)")
+    cov_cols = [r['name'] for r in cursor.fetchall()]
+    
+    if 'user_comment' not in cov_cols:
+        try:
+            cursor.execute("ALTER TABLE conversations ADD COLUMN user_comment TEXT")
+            print("Migration: Added user_comment to conversations")
+        except Exception as e:
+            print(f"Error adding user_comment column: {e}")
+            # Do not suppress critical errors
+
+    # 2. Check feedback table columns
+    cursor.execute("PRAGMA table_info(feedback)")
+    feed_cols = [r['name'] for r in cursor.fetchall()]
+    
+    needed_feedback_cols = [
+        ("score_accuracy", "INTEGER"),
+        ("score_completeness", "INTEGER"),
+        ("score_detail", "INTEGER"),
+        ("score_usefulness", "INTEGER"),
+        ("score_satisfaction", "INTEGER"),
+        ("comment", "TEXT")
+    ]
+    
+    for col_name, col_type in needed_feedback_cols:
+        if col_name not in feed_cols:
+            try:
+                cursor.execute(f"ALTER TABLE feedback ADD COLUMN {col_name} {col_type}")
+                print(f"Migration: Added {col_name} to feedback")
+            except Exception as e:
+                print(f"Error adding {col_name} to feedback: {e}")
+
     conn.commit()
     conn.close()
 
-@st.cache_resource
+# Removed @st.cache_resource to ensure migration check runs on reload
 def ensure_db_initialized():
-    """Ensure database is initialized (cached)."""
+    """Ensure database is initialized."""
     init_db()
     return True
 
@@ -134,6 +198,26 @@ def save_conversation(
     finally:
         conn.close()
 
+def save_conversation_comment(conversation_id: int, comment: str):
+    """
+    Save user comment/correct answer for the conversation (question).
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            UPDATE conversations 
+            SET user_comment = ? 
+            WHERE id = ?
+        """, (comment, conversation_id))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
 def load_history(username: str, limit: int = 10) -> List[Dict]:
     """
     Load conversation history for a user.
@@ -151,7 +235,7 @@ def load_history(username: str, limit: int = 10) -> List[Dict]:
     try:
         # Get conversations
         cursor.execute("""
-            SELECT id, timestamp, question, knowledge_base
+            SELECT id, timestamp, question, knowledge_base, user_comment
             FROM conversations
             WHERE username = ?
             ORDER BY timestamp DESC
@@ -177,6 +261,7 @@ def load_history(username: str, limit: int = 10) -> List[Dict]:
                 'timestamp': conv_row['timestamp'],
                 'question': conv_row['question'],
                 'knowledge_base': conv_row['knowledge_base'],
+                'comment': conv_row['user_comment'] or "", # Load comment
                 'responses': responses
             })
         
@@ -185,39 +270,51 @@ def load_history(username: str, limit: int = 10) -> List[Dict]:
     finally:
         conn.close()
 
-def save_feedback(response_id: int, feedback_type: str):
+def save_feedback(
+    response_id: int, 
+    accuracy: int = 0,
+    completeness: int = 0,
+    detail: int = 0,
+    usefulness: int = 0,
+    satisfaction: int = 0,
+    comment: str = ""
+):
     """
-    Save user feedback for a response.
-    
-    Args:
-        response_id: Response ID
-        feedback_type: 'thumbs_up' or 'thumbs_down'
+    Save or update user feedback for a response with 5 dimensions + comment.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
-        # Check if feedback already exists
-        cursor.execute("""
-            SELECT id FROM feedback
-            WHERE response_id = ?
-        """, (response_id,))
-        
+        # Check if feedback already exists for this response
+        cursor.execute("SELECT id FROM feedback WHERE response_id = ?", (response_id,))
         existing = cursor.fetchone()
         
+        # Helper to treat 0 as NULL if strictly needed, but 0 is fine as 'unrated' or handled by UI
+        # We will update all fields provided.
+        
         if existing:
-            # Update existing feedback
+            # Update
             cursor.execute("""
                 UPDATE feedback
-                SET feedback_type = ?, created_at = CURRENT_TIMESTAMP
+                SET score_accuracy = ?,
+                    score_completeness = ?,
+                    score_detail = ?,
+                    score_usefulness = ?,
+                    score_satisfaction = ?,
+                    comment = ?,
+                    created_at = CURRENT_TIMESTAMP
                 WHERE response_id = ?
-            """, (feedback_type, response_id))
+            """, (accuracy, completeness, detail, usefulness, satisfaction, comment, response_id))
         else:
-            # Insert new feedback
+            # Insert
             cursor.execute("""
-                INSERT INTO feedback (response_id, feedback_type)
-                VALUES (?, ?)
-            """, (response_id, feedback_type))
+                INSERT INTO feedback (
+                    response_id, 
+                    score_accuracy, score_completeness, score_detail, score_usefulness, score_satisfaction,
+                    comment, feedback_type
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'detailed')
+            """, (response_id, accuracy, completeness, detail, usefulness, satisfaction, comment))
         
         conn.commit()
         

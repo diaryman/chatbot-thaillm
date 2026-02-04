@@ -8,7 +8,7 @@ from src.config import MODELS, KNOWLEDGE_BASES
 from src.utils import check_secrets
 from src.ui import load_custom_css, render_header, render_user_message, render_result_card, render_welcome_screen, render_copy_button
 from src.services import retrieve_context, call_single_model, generate_related_questions
-from src.database import ensure_db_initialized, save_conversation, load_history, save_feedback, get_response_id, get_stats
+from src.database import ensure_db_initialized, save_conversation, load_history, save_feedback, get_response_id, get_stats, save_conversation_comment
 from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
 # 1. Setup Page
@@ -168,12 +168,20 @@ else:
     # ==========================================
     
     # Feedback Callback Logic
-    def handle_feedback(response_id, score, model_name):
+    # Feedback Callback Logic
+    def handle_feedback(response_id, acc, comp, det, use, sat, comment):
         if response_id:
             try:
-                # Store score as string "1" to "5"
-                save_feedback(response_id, str(score))
-                st.toast(f"✅ บันทึกคะแนนเรียบร้อย ({score} ดาว)", icon="⭐")
+                save_feedback(
+                    response_id, 
+                    accuracy=acc, 
+                    completeness=comp, 
+                    detail=det, 
+                    usefulness=use, 
+                    satisfaction=sat, 
+                    comment=comment
+                )
+                st.toast(f"✅ บันทึกผลประเมินเรียบร้อย", icon="⭐")
             except Exception as e:
                 st.error(f"Error saving feedback: {e}")
 
@@ -234,17 +242,56 @@ else:
                     with cols[i]:
                         render_result_card(res, kb_name)
                         
-                        # 5-Star Feedback
-                        score = st.feedback("stars", key=f"star_{msg_idx}_{m_key}")
-                        if score is not None:
-                            # score is 0-4, map to 1-5? Or keep 0-4? usually user expects 1-5.
-                            # Standard UI usually maps indices. Let's send real score + 1.
-                            # But wait, st.feedback returns 0-based index?
-                            # Documentation: "The index of the selected option, starting from 0."
-                            # So 0 = 1 star, 4 = 5 stars.
-                            handle_feedback(res.get('db_id'), score + 1, m_key)
+                        # Unified Feedback System (5 Dimensions ONLY)
+                        with st.expander("⭐ ประเมินคำตอบ (Rate)"):
+                            f_uid = f"{msg_idx}_{m_key}_{res.get('db_id')}"
+                            
+                            st.caption("1. ความถูกต้อง (Accuracy)")
+                            s_acc = st.feedback("stars", key=f"acc_{f_uid}")
+                            
+                            st.caption("2. ความครบถ้วน (Completeness)")
+                            s_comp = st.feedback("stars", key=f"comp_{f_uid}")
+                            
+                            st.caption("3. ความละเอียด (Detail)")
+                            s_det = st.feedback("stars", key=f"det_{f_uid}")
+                            
+                            st.caption("4. มีประโยชน์ (Usefulness)")
+                            s_use = st.feedback("stars", key=f"use_{f_uid}")
+                            
+                            st.caption("5. ความพึงพอใจภาพรวม (Satisfaction)")
+                            s_sat = st.feedback("stars", key=f"sat_{f_uid}")
+                            
+                            if st.button("ส่งผลประเมิน", key=f"btn_{f_uid}", use_container_width=True):
+                                v_acc = (s_acc + 1) if s_acc is not None else 0
+                                v_comp = (s_comp + 1) if s_comp is not None else 0
+                                v_det = (s_det + 1) if s_det is not None else 0
+                                v_use = (s_use + 1) if s_use is not None else 0
+                                v_sat = (s_sat + 1) if s_sat is not None else 0
+                                
+                                handle_feedback(
+                                    res.get('db_id'), 
+                                    v_acc, v_comp, v_det, v_use, v_sat, 
+                                    "" # Empty comment for individual feedback
+                                )
                             
                         render_copy_button(res['answer'], f"hist_{i}_{len(str(results))}")
+
+                # Global Comment for this Turn (Outside Model Loop)
+                if msg.get("conversation_id"):
+                     st.markdown("---")
+                     with st.expander("💬 ข้อเสนอแนะเพิ่มเติม / คำตอบที่ถูกต้อง (สำหรับคำถามนี้)"):
+                         c_key = f"g_comment_{msg_idx}_{msg['conversation_id']}"
+                         
+                         # Check if comment exists in msg (loaded from history) or session?
+                         # For now, just text area. DB persistence is handled.
+                         # Ideally pre-fill if loaded from DB.
+                         default_comment = msg.get("comment", "")
+                         
+                         g_comment = st.text_area("ระบุคำตอบที่ถูกต้อง หรือข้อเสนอแนะ:", value=default_comment, key=c_key)
+                         
+                         if st.button("บันทึกข้อเสนอแนะ", key=f"btn_{c_key}"):
+                             save_conversation_comment(msg['conversation_id'], g_comment)
+                             st.toast("✅ บันทึกข้อเสนอแนะเรียบร้อย")
                 
                 # Render Suggested Questions (if any) for the latset message
                 suggestions = msg.get("suggestions", [])
