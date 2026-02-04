@@ -49,8 +49,15 @@ sudo apt install docker.io docker-compose -y
 sudo systemctl enable --now docker
 ```
 
-### 2. นำไฟล์ขึ้น Server
-Clone git หรืออัปโหลดไฟล์โปรเจคทั้งหมดไปที่ Server (เช่น `/opt/mybot-thaillm`)
+### 2. ติดตั้ง Source Code
+รันคำสั่งเพื่อ Clone โปรเจคลงในโฟลเดอร์ `/home/chatbotthaillm`:
+```bash
+# Clone repository
+sudo git clone https://github.com/diaryman/chatbot-thaillm.git /home/chatbotthaillm
+
+# เข้าไปที่โฟลเดอร์โปรเจค
+cd /home/chatbotthaillm
+```
 
 ### 3. ตั้งค่า Secrets
 สร้างไฟล์ `.streamlit/secrets.toml` และใส่ข้อมูลที่จำเป็น:
