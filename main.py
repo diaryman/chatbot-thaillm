@@ -6,9 +6,11 @@ import threading
 
 from src.config import MODELS, KNOWLEDGE_BASES
 from src.utils import check_secrets
-from src.ui import load_custom_css, render_header, render_user_message, render_result_card, render_welcome_screen, render_copy_button
+from src.ui import load_custom_css, render_header, render_user_message, render_result_card, render_welcome_screen, render_copy_button, render_sidebar_header
 from src.services import retrieve_context, call_single_model, generate_related_questions
 from src.database import ensure_db_initialized, save_conversation, load_history, save_feedback, get_response_id, get_stats, save_conversation_comment
+from src.admin import render_admin_dashboard
+from src.export import export_conversation_to_pdf, export_history_to_csv
 from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
 # 1. Setup Page
@@ -68,18 +70,40 @@ if not st.session_state.username_confirmed:
 # ==========================================
 # 🔐 LOGIN SCREEN
 # ==========================================
+# ==========================================
+# 🔐 PREMIUM LOGIN SCREEN
+# ==========================================
 if not st.session_state.username_confirmed:
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        st.markdown("<div style='text-align: center; font-size: 80px;'>⚖️</div>", unsafe_allow_html=True)
-        st.markdown("<h1 style='text-align: center;'>Smart Court AI</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; margin-bottom: 30px;'>ระบบผู้ช่วยอัจฉริยะศาลปกครอง <b>(4 ThaiLLM Models)</b></p>", unsafe_allow_html=True)
+    # Use a centered layout with a wider middle column
+    _, central_col, _ = st.columns([0.5, 3, 0.5])
+    
+    with central_col:
+        st.markdown("<br/><br/>", unsafe_allow_html=True)
+        # Wrap the whole login form in a premium glass card
+        st.markdown("""
+        <div class="glass-card" style="padding: 40px; text-align: center;">
+            <div style='font-size: 80px; margin-bottom: 10px;'>⚖️</div>
+            <h1 style='margin-bottom: 0;'>Smart Court AI</h1>
+            <p style='font-size: 1.2rem; opacity: 0.8; margin-bottom: 40px;'>
+               Smart Assistant for the Administrative Court of Thailand<br/>
+               <span style="font-size: 0.9rem; font-weight: normal;">(Powered by 4 Advance ThaiLLM Models)</span>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
+        # We can't put interactive Streamlit widgets inside a div, so we use a container with border=False
+        # and rely on the background style we just set above if possible, or just place them after.
+        # Streamlit containers now support styling via st.container(border=True)
+        
+        st.markdown("<br/>", unsafe_allow_html=True)
         with st.container(border=True):
-            st.markdown("##### 👤 กรุณาระบุชื่อผู้ใช้งาน (User Identification)")
-            name_input = st.text_input("ชื่อของคุณ", placeholder="เช่น Officer A, สมชาย, ...", label_visibility="collapsed")
+            st.markdown("### 👤 ยืนยันตัวตน (Identity Verification)")
+            name_input = st.text_input("Name/ID", placeholder="Enter your name or employee ID...", label_visibility="collapsed")
             
-            if st.button("🚀 เข้าสู่ระบบ (Start)", type="primary", use_container_width=True):
+            # Sub-text
+            st.markdown("<p style='font-size: 0.8rem; color: gray;'>ระบบจะเก็บข้อมูลการใช้งานและผลประเมินเพื่อใช้ในการพัฒนาระบบ (Usage logs & feedback will be analyzed for development)</p>", unsafe_allow_html=True)
+            
+            if st.button("🚀 เข้าสู่ระบบ (Start Session)", type="primary", use_container_width=True):
                 if name_input.strip():
                     st.session_state.username = name_input.strip()
                     st.session_state.username_confirmed = True
@@ -87,7 +111,7 @@ if not st.session_state.username_confirmed:
                     st.query_params["user"] = name_input.strip()
                     st.rerun()
                 else:
-                    st.warning("⚠️ กรุณากรอกชื่อก่อนเริ่มใช้งาน")
+                    st.warning("⚠️ Please provide a name to start.")
     st.stop()
 
 # ==========================================
@@ -95,9 +119,9 @@ if not st.session_state.username_confirmed:
 # ==========================================
 else:
     with st.sidebar:
-        st.markdown("""<div style="text-align: center; margin-bottom: 20px;"><div class="court-icon">⚖️</div></div>""", unsafe_allow_html=True)
-        st.markdown("<h3 style='text-align: center;'>Smart Court AI</h3>", unsafe_allow_html=True)
-        st.markdown("---")
+        render_sidebar_header(st.session_state.username)
+        
+        st.markdown("### ⚙️ Settings")
         
         with st.expander("⚙️ ตั้งค่า (Settings)", expanded=True):
             theme_choice = st.radio("Theme Mode", ["🌙 Modern Dark", "☀️ Official Light"], index=1, label_visibility="collapsed")
@@ -185,8 +209,12 @@ else:
             except Exception as e:
                 st.error(f"Error saving feedback: {e}")
 
-    render_header()
-    tab_chat, tab_hist = st.tabs([f"💬 สนทนา {len(selected_models)} โมเดล", "📜 ประวัติ (History)"])
+    # Main Tabs
+    tab_chat, tab_hist, tab_admin = st.tabs([
+        "💬 สนทนา (Smart Chat)", 
+        "📜 ประวัติ (History)", 
+        "📊 แอดมิน (Admin Insights)"
+    ])
     
     def get_grid_cols(n_models):
         if n_models == 1: return st.columns(1)
@@ -403,6 +431,20 @@ else:
                 with st.expander(f"🕒 {conv['timestamp']} | ❓ {conv['question'][:50]}..."):
                     st.write(f"**Question:** {conv['question']}")
                     st.caption(f"Knowledge Base: {conv['knowledge_base']}")
+                    
+                    # --- Export Buttons ---
+                    e_col1, e_col2 = st.columns([1, 4])
+                    with e_col1:
+                        pdf_data = export_conversation_to_pdf(conv)
+                        st.download_button(
+                            label="📥 Export PDF",
+                            data=pdf_data,
+                            file_name=f"chat_{conv['id']}.pdf",
+                            mime="application/pdf",
+                            key=f"dl_{conv['id']}"
+                        )
+                    
+                    st.markdown("<br/>", unsafe_allow_html=True)
                     h_cols = st.columns(2) + st.columns(2)
                     for i, resp in enumerate(conv['responses']):
                         if i < 4:
@@ -430,5 +472,25 @@ else:
                         st.markdown("---")
                         st.markdown("**💬 ข้อเสนอแนะเพิ่มเติม / คำตอบที่แนะนำ:**")
                         st.success(conv['comment'])
+            
+            # --- Global History CSV ---
+            st.markdown("---")
+            csv_data = export_history_to_csv(history)
+            st.download_button(
+                label="📊 Download Full History (CSV)",
+                data=csv_data,
+                file_name=f"history_{username}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
         else:
             st.info("ยังไม่มีประวัติการใช้งาน")
+
+    # --- Tab 3: Admin Insights ---
+    with tab_admin:
+        if username.lower() == "admin" or st.sidebar.toggle("Developer Mode (Enable Admin View)"):
+            render_admin_dashboard()
+        else:
+            st.warning("🔒 เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถเข้าถึงส่วนนี้ได้ (Admin Only)")
+            st.info("Tip: พิมพ์ชื่อผู้ใช้เป็น 'admin' หรือเปิด Developer Mode ใน Sidebar เพื่อข้ามการตรวจสอบ")
+
