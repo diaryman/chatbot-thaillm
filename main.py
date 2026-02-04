@@ -235,7 +235,7 @@ else:
         
         # Show Welcome Screen ONLY if history is empty and no active prompt
         if len(st.session_state.messages) == 0 and not prompt:
-            with welcome_ph:
+            with welcome_ph.container():
                 render_welcome_screen()
                 s_cols = st.columns(3)
                 questions = [
@@ -245,7 +245,7 @@ else:
                 ]
                 for i, q in enumerate(questions):
                     with s_cols[i]:
-                        if st.button(q, use_container_width=True):
+                        if st.button(q, use_container_width=True, key=f"welcome_q_{i}"):
                             st.session_state['auto_run_prompt'] = q
                             st.rerun()
         else:
