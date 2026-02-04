@@ -139,6 +139,15 @@ else:
         kb_name = st.selectbox("เลือกแหล่งข้อมูล", list(KNOWLEDGE_BASES.keys()), index=0, key="kb_select")
         kb_id = KNOWLEDGE_BASES[kb_name]
         
+        st.markdown("---")
+        if st.button("🚪 ลงชื่อออก (Logout)", use_container_width=True, type="secondary"):
+            st.session_state.username_confirmed = False
+            st.session_state.username = ""
+            st.session_state.messages = []
+            if "user" in st.query_params:
+                del st.query_params["user"]
+            st.rerun()
+
         st.info(f"ระบบจะใช้ **{kb_name}** ในการค้นหาคำตอบสำหรับทั้ง 4 โมเดล")
 
         st.markdown("---")
