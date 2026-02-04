@@ -409,6 +409,26 @@ else:
                             with h_cols[i]:
                                 st.markdown(f"**{resp['model_name']}**")
                                 st.info(resp['answer'])
+                                
+                                # Display Ratings if they exist
+                                if resp.get('score_satisfaction'):
+                                    st.markdown(f"""
+                                    <div style="font-size: 0.8em; color: #666; background: #f0f2f6; padding: 5px; border-radius: 5px;">
+                                    <b>⭐ การประเมิน:</b><br/>
+                                    แม่นยำ: {resp['score_accuracy']} | 
+                                    ครบถ้วน: {resp['score_completeness']} | 
+                                    รายละเอียด: {resp['score_detail']} | 
+                                    มีประโยชน์: {resp['score_usefulness']} | 
+                                    พอใจรวม: {resp['score_satisfaction']}
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                
                                 st.caption(f"Cost: {resp['cost']} THB")
+                    
+                    # Display Recommended Answer / Global Comment if it exists
+                    if conv['comment']:
+                        st.markdown("---")
+                        st.markdown("**💬 ข้อเสนอแนะเพิ่มเติม / คำตอบที่แนะนำ:**")
+                        st.success(conv['comment'])
         else:
             st.info("ยังไม่มีประวัติการใช้งาน")

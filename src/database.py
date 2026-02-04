@@ -246,12 +246,15 @@ def load_history(username: str, limit: int = 10) -> List[Dict]:
         for conv_row in cursor.fetchall():
             conv_id = conv_row['id']
             
-            # Get all responses for this conversation
+            # Get all responses and their feedback for this conversation
             cursor.execute("""
-                SELECT model_name, answer, cost, response_time
-                FROM responses
-                WHERE conversation_id = ?
-                ORDER BY id
+                SELECT r.id, r.model_name, r.answer, r.cost, r.response_time,
+                       f.score_accuracy, f.score_completeness, f.score_detail, 
+                       f.score_usefulness, f.score_satisfaction, f.comment as fb_comment
+                FROM responses r
+                LEFT JOIN feedback f ON r.id = f.response_id
+                WHERE r.conversation_id = ?
+                ORDER BY r.id
             """, (conv_id,))
             
             responses = [dict(row) for row in cursor.fetchall()]
