@@ -1,4 +1,6 @@
 streamlit
 boto3
 requests
+pandas
+reportlab
 
