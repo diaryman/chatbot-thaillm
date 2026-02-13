@@ -2,10 +2,16 @@
 import sqlite3
 import os
 from datetime import datetime
+import pytz
 from typing import List, Dict, Optional, Tuple
 import streamlit as st
 
 DB_PATH = "data/court_ai.db"
+
+def get_thai_time():
+    """Get current time in Asia/Bangkok timezone."""
+    bangkok_tz = pytz.timezone('Asia/Bangkok')
+    return datetime.now(bangkok_tz)
 
 def get_db_connection():
     """Get database connection with proper configuration."""
@@ -153,25 +159,19 @@ def save_conversation(
 ) -> int:
     """
     Save a conversation with all 4 model responses.
-    
-    Args:
-        username: User's name
-        question: User's question
-        responses_data: List of dicts with keys: model, answer, cost, time
-        knowledge_base: Knowledge base used
-    
-    Returns:
-        conversation_id
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # Get Thai Time
+    current_time = get_thai_time()
+    
     try:
-        # Insert conversation
+        # Insert conversation with explicit timestamp
         cursor.execute("""
-            INSERT INTO conversations (username, question, knowledge_base)
-            VALUES (?, ?, ?)
-        """, (username, question, knowledge_base))
+            INSERT INTO conversations (username, question, knowledge_base, timestamp)
+            VALUES (?, ?, ?, ?)
+        """, (username, question, knowledge_base, current_time))
         
         conversation_id = cursor.lastrowid
         
@@ -221,13 +221,6 @@ def save_conversation_comment(conversation_id: int, comment: str):
 def load_history(username: str, limit: int = 10) -> List[Dict]:
     """
     Load conversation history for a user.
-    
-    Args:
-        username: User's name
-        limit: Maximum number of conversations to load
-    
-    Returns:
-        List of conversations with responses
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -264,7 +257,7 @@ def load_history(username: str, limit: int = 10) -> List[Dict]:
                 'timestamp': conv_row['timestamp'],
                 'question': conv_row['question'],
                 'knowledge_base': conv_row['knowledge_base'],
-                'comment': conv_row['user_comment'] or "", # Load comment
+                'comment': conv_row['user_comment'] or "", 
                 'responses': responses
             })
         
@@ -283,18 +276,17 @@ def save_feedback(
     comment: str = ""
 ):
     """
-    Save or update user feedback for a response with 5 dimensions + comment.
+    Save or update user feedback for a response.
     """
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    current_time = get_thai_time()
     
     try:
         # Check if feedback already exists for this response
         cursor.execute("SELECT id FROM feedback WHERE response_id = ?", (response_id,))
         existing = cursor.fetchone()
-        
-        # Helper to treat 0 as NULL if strictly needed, but 0 is fine as 'unrated' or handled by UI
-        # We will update all fields provided.
         
         if existing:
             # Update
@@ -306,18 +298,18 @@ def save_feedback(
                     score_usefulness = ?,
                     score_satisfaction = ?,
                     comment = ?,
-                    created_at = CURRENT_TIMESTAMP
+                    created_at = ?
                 WHERE response_id = ?
-            """, (accuracy, completeness, detail, usefulness, satisfaction, comment, response_id))
+            """, (accuracy, completeness, detail, usefulness, satisfaction, comment, current_time, response_id))
         else:
             # Insert
             cursor.execute("""
                 INSERT INTO feedback (
                     response_id, 
                     score_accuracy, score_completeness, score_detail, score_usefulness, score_satisfaction,
-                    comment, feedback_type
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'detailed')
-            """, (response_id, accuracy, completeness, detail, usefulness, satisfaction, comment))
+                    comment, feedback_type, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'detailed', ?)
+            """, (response_id, accuracy, completeness, detail, usefulness, satisfaction, comment, current_time))
         
         conn.commit()
         
