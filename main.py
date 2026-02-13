@@ -97,21 +97,54 @@ if not st.session_state.username_confirmed:
         
         st.markdown("<br/>", unsafe_allow_html=True)
         with st.container(border=True):
-            st.markdown("### 👤 ยืนยันตัวตน (Identity Verification)")
-            name_input = st.text_input("Name/ID", placeholder="Enter your name or employee ID...", label_visibility="collapsed")
+            st.markdown("### 👤 ลงชื่อเข้าใช้งาน (Sign In)")
+            
+            # 1. Position Selection
+            position_opts = ["ตุลาการศาลปกครอง", "พนักงานคดีปกครอง", "เจ้าหน้าที่ศาลปกครอง", "อื่นๆ"]
+            selected_pos = st.selectbox("1. เลือกตำแหน่ง (Position):", position_opts, key="login_pos")
+            
+            final_role = selected_pos
+            if selected_pos == "อื่นๆ":
+                 final_role = st.text_input("ระบุตำแหน่ง (Specify Position):", placeholder="โปรดระบุ...", key="login_pos_other")
+            
+            # 2. Level Selection (Conditional)
+            # Conditions: Show if NOT "ตุลาการศาลปกครอง"
+            selected_level = ""
+            if selected_pos != "ตุลาการศาลปกครอง":
+                level_opts = ["ปฏิบัติการ", "ชำนาญการ", "ชำนาญการพิเศษ", "เชี่ยวชาญ"]
+                selected_level = st.selectbox("2. เลือกระดับ (Level):", level_opts, key="login_level")
+            
+            # 3. Agency Selection
+            agency_opts = [
+                "ศาลปกครอง", 
+                "สำนักงานศาลปกครองสูงสุด", 
+                "สำนักงานศาลปกครองกลาง", 
+                "สำนักงานศาลปกครองในภูมิภาค", 
+                "สำนักวิจัยและวิชาการ", 
+                "สำนักส่งเสริมงานคดีปกครอง"
+            ]
+            selected_agency = st.selectbox("3. เลือกหน่วยงาน (Agency):", agency_opts, key="login_agency")
             
             # Sub-text
-            st.markdown("<p style='font-size: 0.8rem; color: gray;'>ระบบจะเก็บข้อมูลการใช้งานและผลประเมินเพื่อใช้ในการพัฒนาระบบ (Usage logs & feedback will be analyzed for development)</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size: 0.8rem; color: gray; margin-top: 20px;'>ระบบจะเก็บข้อมูลการใช้งานและผลประเมินเพื่อใช้ในการพัฒนาระบบ</p>", unsafe_allow_html=True)
             
             if st.button("🚀 เข้าสู่ระบบ (Start Session)", type="primary", use_container_width=True):
-                if name_input.strip():
-                    st.session_state.username = name_input.strip()
+                # Validation
+                if not final_role.strip():
+                    st.warning("⚠️ กรุณาระบุตำแหน่ง (Please specify your position)")
+                else:
+                    # Construct Username/ID
+                    # Format: Position (Level) @ Agency  OR  Position @ Agency
+                    if selected_level:
+                        user_id_str = f"{final_role.strip()} ({selected_level}) - {selected_agency}"
+                    else:
+                        user_id_str = f"{final_role.strip()} - {selected_agency}"
+                        
+                    st.session_state.username = user_id_str
                     st.session_state.username_confirmed = True
                     st.session_state.last_activity = time.time()
-                    st.query_params["user"] = name_input.strip()
+                    st.query_params["user"] = user_id_str
                     st.rerun()
-                else:
-                    st.warning("⚠️ Please provide a name to start.")
     st.stop()
 
 # ==========================================
