@@ -219,21 +219,27 @@ else:
 
         st.markdown("---")
         
-        col_clr, col_save = st.columns(2)
-        if col_clr.button("🗑️ Reset", use_container_width=True):
-            st.session_state.messages = []
-            if 'auto_run_prompt' in st.session_state: del st.session_state['auto_run_prompt']
-            st.rerun()
-            
-        if st.session_state.get("messages"):
-            chat_str = "\n".join([f"{m['role']}: {m['content']}" if m['role']=='user' else "AI Reponse" for m in st.session_state.messages])
-            col_save.download_button("📥 Save", chat_str, "log.txt", use_container_width=True)
-    
+        # Admin Login Section
+        with st.expander("🔐 ผู้ดูแลระบบ (Admin Access)"):
+            if not st.session_state.get("is_admin"):
+                admin_pass = st.text_input("รหัสผ่าน (Password)", type="password", key="admin_pass_login")
+                if st.button("เข้าสู่ระบบ (Login)", key="btn_admin_login"):
+                    if admin_pass == "Admin1234":
+                        st.session_state.is_admin = True
+                        st.success("✅ เข้าสู่ระบบสำเร็จ")
+                        st.rerun()
+                    else:
+                        st.error("❌ รหัสผ่านไม่ถูกต้อง")
+            else:
+                st.success("✅ ท่านอยู่ในสถานะ Admin")
+                if st.button("ออกจากระบบ (Logout Admin)", key="btn_admin_logout"):
+                    st.session_state.is_admin = False
+                    st.rerun()
+
     # ==========================================
     # 🖥️ MAIN CONTENT (Logged In)
     # ==========================================
     
-    # Feedback Callback Logic
     # Feedback Callback Logic
     def handle_feedback(response_id, acc, comp, det, use, sat, comment):
         if response_id:
@@ -352,9 +358,6 @@ else:
                      with st.expander("💬 ข้อเสนอแนะเพิ่มเติม / คำตอบที่ถูกต้อง (สำหรับคำถามนี้)"):
                          c_key = f"g_comment_{msg_idx}_{msg['conversation_id']}"
                          
-                         # Check if comment exists in msg (loaded from history) or session?
-                         # For now, just text area. DB persistence is handled.
-                         # Ideally pre-fill if loaded from DB.
                          default_comment = msg.get("comment", "")
                          
                          g_comment = st.text_area("ระบุคำตอบที่ถูกต้อง หรือข้อเสนอแนะ:", value=default_comment, key=c_key)
@@ -363,7 +366,7 @@ else:
                              save_conversation_comment(msg['conversation_id'], g_comment)
                              st.toast("✅ บันทึกข้อเสนอแนะเรียบร้อย")
                 
-                # Render Suggested Questions (if any) for the latset message
+                # Render Suggested Questions (if any)
                 suggestions = msg.get("suggestions", [])
                 if suggestions:
                     st.write("---")
@@ -418,7 +421,6 @@ else:
                         placeholders[idx].empty()
                         with cols[idx]:
                             render_result_card(res, kb_name)
-                            # No feedback in live stream for cleaner UI
                             render_copy_button(res['answer'], f"live_{idx}")
             
             # 3. Save to DB
@@ -433,7 +435,6 @@ else:
             # 4. Generate Suggestions (Post-Response)
             suggestions = []
             with st.spinner("💡 กำลังคิดคำถามแนะนำ (Thinking next questions)..."):
-                # Use the first selected model (or 'Typhoon') for suggestions
                 model_for_sugg = selected_models[0] if selected_models else "Typhoon"
                 suggestions = generate_related_questions(prompt, ctx_text, model_name=model_for_sugg)
                 
@@ -449,7 +450,7 @@ else:
                 "suggestions": suggestions
             })
             
-            # 6. Rerun to show everything properly (Stars + Suggestions)
+            # 6. Rerun
             st.rerun()
 
     # --- Tab 2: History ---
@@ -474,7 +475,6 @@ else:
                     st.write(f"**Question:** {conv['question']}")
                     st.caption(f"Knowledge Base: {conv['knowledge_base']}")
                     
-                    # --- Export Buttons ---
                     e_col1, e_col2 = st.columns([1, 4])
                     with e_col1:
                         pdf_data = export_conversation_to_pdf(conv)
@@ -494,7 +494,6 @@ else:
                                 st.markdown(f"**{resp['model_name']}**")
                                 st.info(resp['answer'])
                                 
-                                # Display Ratings if they exist
                                 if resp.get('score_satisfaction'):
                                     st.markdown(f"""
                                     <div style="font-size: 0.8em; color: #666; background: #f0f2f6; padding: 5px; border-radius: 5px;">
@@ -509,13 +508,11 @@ else:
                                 
                                 st.caption(f"Cost: {resp['cost']} THB")
                     
-                    # Display Recommended Answer / Global Comment if it exists
                     if conv['comment']:
                         st.markdown("---")
                         st.markdown("**💬 ข้อเสนอแนะเพิ่มเติม / คำตอบที่แนะนำ:**")
                         st.success(conv['comment'])
             
-            # --- Global History CSV ---
             st.markdown("---")
             csv_data = export_history_to_csv(history)
             st.download_button(
@@ -530,9 +527,9 @@ else:
 
     # --- Tab 3: Admin Insights ---
     with tab_admin:
-        if username.lower() == "admin" or st.sidebar.toggle("Developer Mode (Enable Admin View)"):
+        if st.session_state.get("is_admin"):
             render_admin_dashboard()
         else:
-            st.warning("🔒 เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถเข้าถึงส่วนนี้ได้ (Admin Only)")
-            st.info("Tip: พิมพ์ชื่อผู้ใช้เป็น 'admin' หรือเปิด Developer Mode ใน Sidebar เพื่อข้ามการตรวจสอบ")
+            st.warning("🔒 ส่วนนี้สงวนสิทธิ์สำหรับผู้ดูแลระบบ (Admin Only)")
+            st.info("กรุณาเข้าสู่ระบบ Admin ผ่านเมนูทางซ้ายมือ (Sidebar) > 🔐 ผู้ดูแลระบบ")
 

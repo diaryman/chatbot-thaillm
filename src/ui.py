@@ -5,199 +5,259 @@ import html
 # 🎨 THEME & CSS
 # ==========================================
 
-def load_custom_css(theme_mode="Modern Dark"):
+def load_custom_css(theme_mode="Official Light"):
     """
-    Injects custom CSS based on the selected theme without Bootstrap.
-    Uses Custom Utility Classes.
+    Injects custom CSS based on the selected theme.
+    Handles Light and Dark modes with explicit overrides for Streamlit elements.
     """
     if "Light" in theme_mode:
-        bg_image = "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)"
-        text_color = "#1e293b"
-        
-        # Premium Glass Light
-        glass_bg = "rgba(255, 255, 255, 0.7)"
-        glass_border = "1px solid rgba(255, 255, 255, 0.8)"
-        glass_shadow = "0 20px 40px rgba(0, 0, 0, 0.05)"
-        
-        header_gradient = "linear-gradient(to right, #243949 0%, #517fa4 100%)"
-        user_bubble_bg = "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" 
-        user_bubble_text = "#ffffff"
-        
-        sidebar_bg = "rgba(255, 255, 255, 0.95)"
-        input_bg = "rgba(255, 255, 255, 1)"
-        accent_color = "#2563eb"
-        
-    else: # Dark Mode
-        bg_image = "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)" 
-        text_color = "#f1f5f9"
-        
-        # Premium Glass Dark
-        glass_bg = "rgba(30, 41, 59, 0.7)"
-        glass_border = "1px solid rgba(255, 255, 255, 0.08)"
-        glass_shadow = "0 20px 40px rgba(0, 0, 0, 0.4)"
-        
-        header_gradient = "linear-gradient(135deg, #1e293b 0%, #334155 100%)"
-        user_bubble_bg = "linear-gradient(135deg, #475569 0%, #1e293b 100%)"
-        user_bubble_text = "#f1f5f9"
-        
-        sidebar_bg = "rgba(15, 23, 42, 0.95)"
-        input_bg = "rgba(30, 41, 59, 1)"
-        accent_color = "#60a5fa"
+        # --- OFFICIAL LIGHT THEME VARIABLES ---
+        colors = {
+            "bg_app": "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+            "bg_sidebar": "#ffffff",
+            "text_main": "#0f172a",       # Slate 900
+            "text_sidebar": "#334155",    # Slate 700
+            "input_bg": "#ffffff",
+            "input_border": "1px solid #94a3b8", # DEFINED STRONGER BORDER
+            "input_text": "#0f172a",
+            "button_bg": "#ffffff",
+            "button_text": "#0f172a",
+            "button_border": "1px solid #94a3b8", # DEFINED STRONGER BORDER
+            "glass_bg": "rgba(255, 255, 255, 0.95)",
+            "glass_border": "1px solid #cbd5e1", # DEFINED CARD BORDER
+            "glass_shadow": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            "header_gradient": "linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)",
+            "accent": "#1e40af",
+            "user_bubble_bg": "#eff6ff",  
+            "user_bubble_text": "#1e3a8a" 
+        }
+    else:
+        # --- MODERN DARK THEME VARIABLES ---
+        colors = {
+            "bg_app": "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+            "bg_sidebar": "rgba(15, 23, 42, 0.95)",
+            "text_main": "#f8fafc",       
+            "text_sidebar": "#e2e8f0",    
+            "input_bg": "rgba(30, 41, 59, 0.6)",
+            "input_border": "1px solid rgba(255, 255, 255, 0.2)", # STRONGER BORDER
+            "input_text": "#f8fafc",
+            "button_bg": "rgba(255, 255, 255, 0.05)",
+            "button_text": "#f8fafc",
+            "button_border": "1px solid rgba(255, 255, 255, 0.15)", # STRONGER BORDER
+            "glass_bg": "rgba(30, 41, 59, 0.7)",
+            "glass_border": "1px solid rgba(255, 255, 255, 0.15)", # STRONGER CARD BORDER
+            "glass_shadow": "0 20px 40px rgba(0, 0, 0, 0.4)",
+            "header_gradient": "linear-gradient(135deg, #1e40af 0%, #172554 100%)",
+            "accent": "#60a5fa",
+            "user_bubble_bg": "#1e293b",
+            "user_bubble_text": "#f8fafc"
+        }
 
     st.markdown(f"""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap');
         
-        /* Global Reset */
-        .stApp {{ background-image: {bg_image}; background-attachment: fixed; background-size: cover; }}
-        html, body, [class*="css"], .stMarkdown, .stText, p, ol, ul, li {{ 
-            font-family: 'Inter', 'Sarabun', sans-serif !important; 
-            color: {text_color} !important; 
-        }}
-        h1, h2, h3, h4, h5, h6 {{ 
-            font-family: 'Inter', 'Sarabun', sans-serif !important; 
-            font-weight: 700 !important;
-            color: {text_color} !important; 
-            letter-spacing: -0.02em;
+        /* --- GLOBAL & APP BACKGROUND --- */
+        .stApp {{
+            background: {colors['bg_app']} !important;
+            background-attachment: fixed !important;
+            background-size: cover !important;
         }}
         
-        /* Glassmorphism Classes */
-        .glass-card {{
-            background: {glass_bg} !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border: {glass_border} !important;
-            box-shadow: {glass_shadow} !important;
-            border-radius: 20px !important;
-            transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+        /* Safer selector to avoid breaking icons */
+        .stApp {{
+             font-family: 'Inter', 'Sarabun', sans-serif !important;
         }}
-        .glass-card:hover {{
+        
+        h1, h2, h3, h4, h5, h6, p, li, .stMarkdown, .stText, input, textarea, button {{
+            font-family: 'Inter', 'Sarabun', sans-serif !important;
+            color: {colors['text_main']} !important;
+        }}
+        
+        /* --- SIDEBAR --- */
+        section[data-testid="stSidebar"] {{
+            background-color: {colors['bg_sidebar']} !important;
+            border-right: 1px solid rgba(0,0,0,0.05) !important;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.02) !important; /* Soft Shadow Separator */
+        }}
+        section[data-testid="stSidebar"] .stMarkdown p, 
+        section[data-testid="stSidebar"] label, 
+        section[data-testid="stSidebar"] span {{
+            color: {colors['text_sidebar']} !important;
+        }}
+        section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 {{
+             color: {colors['text_sidebar']} !important;
+        }}
+        
+        /* --- INPUTS --- */
+        /* --- INPUTS --- */
+        div[data-testid="stTextInput"] input, 
+        div[data-testid="stTextArea"] textarea, 
+        div[data-testid="stNumberInput"] input,
+        .stChatInput textarea {{
+            background-color: {colors['input_bg']} !important;
+            color: {colors['input_text']} !important;
+            caret-color: {colors['input_text']} !important;
+            border: {colors['input_border']} !important;
+            border-radius: 16px !important; /* Modern Rounded Corners */
+            padding: 12px 16px !important;
+            transition: border 0.2s ease;
+        }}
+        
+        div[data-testid="stTextInput"] input:focus, 
+        div[data-testid="stTextArea"] textarea:focus, 
+        div[data-testid="stNumberInput"] input:focus, 
+        .stChatInput textarea:focus {{
+            border-color: {colors['accent']} !important;
+            box-shadow: 0 0 0 2px {colors['accent']}20 !important;
+        }}
+        
+        div[data-baseweb="select"] > div {{
+            background-color: {colors['input_bg']} !important;
+            color: {colors['input_text']} !important;
+            border: {colors['input_border']} !important;
+            border-radius: 16px !important;
+        }}
+        div[data-baseweb="menu"] {{
+            background-color: {colors['input_bg']} !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
+        }}
+        div[data-baseweb="option"] {{
+             color: {colors['input_text']} !important;
+        }}
+
+        /* --- BUTTONS --- */
+        .stButton > button {{
+            background-color: {colors['button_bg']} !important;
+            color: {colors['button_text']} !important;
+            border: {colors['button_border']} !important;
+            border-radius: 24px !important; /* Pill Shape */
+            padding: 0.6rem 1.5rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.02em !important;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        }}
+        .stButton > button:hover {{
+            border-color: {colors['accent']} !important;
+            color: {colors['accent']} !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1) !important;
+        }}
+        
+        /* --- CARDS (Glassmorphism) --- */
+        .glass-card, .response-card-container {{
+            background: {colors['glass_bg']} !important;
+            border: {colors['glass_border']} !important;
+            box-shadow: {colors['glass_shadow']} !important;
+            border-radius: 24px !important; /* Modern Large Radius */
+            overflow: hidden; 
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important; /* Smooth Hover Physics */
+        }}
+        
+        .glass-card:hover, .response-card-container:hover {{
             transform: translateY(-5px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.12) !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important;
+            border-color: {colors['accent']}40 !important;
         }}
         
-        /* Utility Classes */
-        .d-flex {{ display: flex; }}
-        .align-items-center {{ align-items: center; }}
-        .justify-content-between {{ justify-content: space-between; }}
-        .justify-content-end {{ justify-content: flex-end; }}
-        .gap-2 {{ gap: 0.5rem; }}
-        .mb-2 {{ margin-bottom: 0.5rem; }}
-        .mb-4 {{ margin-bottom: 1.5rem; }}
-        .me-2 {{ margin-right: 0.5rem; }}
-        
-        .badge {{
-            display: inline-block;
-            padding: 0.45em 0.85em;
-            font-size: 0.75em;
-            font-weight: 600;
-            line-height: 1;
+        /* --- HEADERS --- */
+        .court-header {{
+            background: {colors['header_gradient']} !important;
+            color: white !important;
+            padding: 3rem 2rem;
+            border-radius: 32px; /* Very Rounded Header */
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
             text-align: center;
-            white-space: nowrap;
-            vertical-align: baseline;
-            border-radius: 50px;
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }}
-        .bg-light {{ background-color: rgba(255,255,255,0.1); color: {text_color} !important; border: 1px solid rgba(255,255,255,0.1); }}
-        
-        /* Animations */
-        @keyframes fadeIn {{
-            from {{ opacity: 0; transform: translateY(10px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
-        }}
-        
-        /* Header */
-        .court-header {{ 
-            background: {header_gradient}; 
-            padding: 2.5rem; border-radius: 24px; color: white !important; 
-            text-align: center; margin-bottom: 30px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-            animation: fadeIn 0.8s ease-out;
+            margin-bottom: 2.5rem;
             position: relative;
             overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
         }}
-        .court-header::after {{
-            content: "";
-            position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
-            transform: rotate(45deg);
-            pointer-events: none;
-        }}
-        .court-icon {{ font-size: 60px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3)); }}
-        
-        /* Response Card Structure */
-        .response-card-container {{
-            background: {glass_bg} !important;
-            backdrop-filter: blur(12px) !important;
-            border-radius: 20px; 
-            box-shadow: {glass_shadow};
-            margin-bottom: 25px; 
-            overflow: hidden; 
-            border: {glass_border};
-            animation: fadeIn 0.5s ease-out;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }}
-        .response-card-container:hover {{
-            border-color: {accent_color}50;
-            transform: scale(1.01);
+        .court-header h2, .court-header p, .court-header .court-icon {{
+            color: white !important;
         }}
         
-        .card-header-custom {{ 
-            padding: 16px 24px; 
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            display: flex; justify-content: space-between; align-items: center; 
+        /* --- USER BUBBLE --- */
+        .user-bubble {{
+            background-color: {colors['user_bubble_bg']} !important;
+            color: {colors['user_bubble_text']} !important;
+            padding: 1rem 1.5rem;
+            border-radius: 20px 20px 4px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            font-weight: 500;
+        }}
+        .user-bubble p {{
+             color: {colors['user_bubble_text']} !important;
         }}
         
-        .card-body-custom {{ 
-            padding: 24px 28px; 
-            font-size: 1rem;
-            line-height: 1.7;
+        /* --- DIVIDERS --- */
+        hr {{
+            margin: 2rem 0 !important;
+            border: 0 !important;
+            border-top: 1px solid {colors['input_border']} !important;
+            opacity: 0.5 !important;
         }}
         
-        .model-badge {{ 
+        /* --- UTILS & OVERRIDES --- */
+        code {{
+            color: #d63384 !important;
+            background-color: rgba(0,0,0,0.05) !important;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }}
+        
+        /* Remove default Streamlit Header Decoration */
+        header[data-testid="stHeader"] {{
+            background-color: transparent !important; 
+        }}
+        
+        /* Fix Expander Background (Crucial for Light Mode) */
+        .stExpander, div[data-testid="stExpander"] {{
+            background-color: transparent !important;
+            border: none !important;
+            color: {colors['text_main']} !important;
+        }}
+        
+        .streamlit-expanderHeader, div[data-testid="stExpander"] > details > summary {{
+            background-color: {colors['input_bg']} !important;
+            color: {colors['text_main']} !important;
+            border: 1px solid {colors['input_border']} !important;
+            border-radius: 8px !important;
+        }}
+        
+        /* Force Text Color inside Expander Header */
+        .streamlit-expanderHeader p, 
+        div[data-testid="stExpander"] > details > summary p,
+        div[data-testid="stExpander"] > details > summary span {{
+            color: {colors['text_main']} !important;
+            font-weight: 600;
+        }}
+        
+        /* Fix Expander Icon Color to match text */
+        div[data-testid="stExpander"] > details > summary svg {{
+            fill: {colors['text_main']} !important;
+            color: {colors['text_main']} !important; 
+        }}
+        
+        /* Model Badge Text */
+        .model-badge {{
+            color: white !important;
             display: inline-flex; align-items: center;
             padding: 8px 16px; border-radius: 30px; 
             font-size: 0.9rem; font-weight: 700; 
-            color: white !important; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }}
         
-        /* User Bubble */
-        .user-bubble {{ 
-            background: {user_bubble_bg}; 
-            color: {user_bubble_text} !important; 
-            padding: 18px 26px; 
-            border-radius: 24px 24px 4px 24px; 
-            margin-left: auto; width: fit-content; max-width: 80%; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            font-weight: 500;
+        .card-header-custom {{
+             padding: 16px 24px; 
+             border-bottom: 1px solid rgba(0,0,0,0.05);
+             display: flex; justify-content: space-between; align-items: center; 
         }}
-        
-        /* Streamlit Element Overrides */
-        div[data-testid="stSidebar"] {{ 
-            background-color: {sidebar_bg} !important; 
-            border-right: 1px solid rgba(255,255,255,0.05);
-        }}
-        .stChatInput textarea {{ 
-            background-color: {input_bg} !important; 
-            border-radius: 30px !important; 
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            padding: 15px 25px !important;
-        }}
-        
-        /* Stats Cards */
-        .stat-card {{
-            padding: 20px;
-            text-align: center;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
+        .card-body-custom {{
+             padding: 24px 28px; 
+             font-size: 1rem;
+             line-height: 1.7;
         }}
     </style>
     """, unsafe_allow_html=True)
