@@ -243,3 +243,52 @@ def generate_related_questions(query, context, model_name="Typhoon"):
         st.error("Suggestion System Error")
         st.session_state.setdefault("system_logs", []).append(f"❌ Suggestion Exception: {str(e)}")
         return []
+
+def generate_dashboard_insight(log_summary_text):
+    """
+    Calls AI to analyze the provided log summary text and return strategic insights.
+    """
+    target_model_key = "Typhoon-S 8B" # Good for reasoning/summary
+    if target_model_key not in MODELS:
+        target_model_key = list(MODELS.keys())[0]
+    
+    cfg = MODELS[target_model_key]
+    
+    headers = {
+        "Content-Type": "application/json",
+        "apikey": THAILLM_API_KEY
+    }
+    
+    prompt = f"""
+    บทบาท: คุณคือ "ผู้เชี่ยวชาญด้านการวิเคราะห์ข้อมูล AI สำหรับองค์กร"
+    หน้าที่: วิเคราะห์รายการคำถาม-คำตอบ (Logs) ของผู้ใช้งานศาลปกครอง และให้ข้อมูลสรุปเชิงกลยุทธ์ (Insight)
+    
+    คำแนะนำ:
+    1. สรุปว่า "หัวข้อหลัก" ที่คนถามมากที่สุดในช่วงนี้คือเรื่องอะไร
+    2. วิเคราะห์ "ปัญหา" หรือสิ่งที่คนสับสนมากที่สุด (จากคำถามที่คะแนนต่ำ หรือคำถามที่ถามซ้ำๆ)
+    3. ให้ "คำแนะนำ" แก่ Admin ว่าควรปรับปรุง Prompt หรือเพิ่มเอกสารเรื่องอะไรในความรู้ชุดถนัดไป
+    
+    Logs Data (รายการล่าสุด):
+    {log_summary_text}
+    
+    สรุปรายงานเชิงวิเคราะห์:
+    """
+
+    payload = {
+        "model": "/model",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 1500,
+        "temperature": 0.5
+    }
+    
+    try:
+        response = requests.post(cfg["endpoint"], headers=headers, json=payload, timeout=60)
+        if response.status_code == 200:
+            result = response.json()
+            answer = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+            import re
+            return re.sub(r'<think>.*?</think>', '', answer, flags=re.DOTALL).strip()
+        else:
+            return f"⚠️ AI Insight Error: {response.status_code}"
+    except Exception as e:
+        return f"⚠️ Insight Exception: {str(e)}"

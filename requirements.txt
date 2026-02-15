@@ -5,3 +5,5 @@ pandas
 reportlab
 matplotlib
 
+plotly
+wordcloud
