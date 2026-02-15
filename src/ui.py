@@ -118,13 +118,32 @@ def load_custom_css(theme_mode="Official Light"):
             border: {colors['input_border']} !important;
             border-radius: 16px !important;
         }}
+        
+        /* MULTI-SELECT TAGS (PILLS) FIX */
+        span[data-baseweb="tag"], div[data-testid="stMultiSelectTag"] {{
+            background-color: {colors['accent']} !important;
+            border-radius: 8px !important;
+        }}
+        span[data-baseweb="tag"] span, 
+        div[data-testid="stMultiSelectTag"] span,
+        div[data-testid="stMultiSelectTag"] p {{
+            color: white !important;
+        }}
+        /* Icon (X) for tags */
+        span[data-baseweb="tag"] svg, div[data-testid="stMultiSelectTag"] svg {{
+            fill: white !important;
+        }}
+
         div[data-baseweb="menu"] {{
-            background-color: {colors['input_bg']} !important;
+            background-color: {colors['bg_sidebar']} !important;
             border-radius: 12px !important;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
         }}
         div[data-baseweb="option"] {{
              color: {colors['input_text']} !important;
+        }}
+        div[data-baseweb="option"]:hover {{
+             background-color: {colors['accent']}20 !important;
         }}
 
         /* --- BUTTONS --- */
