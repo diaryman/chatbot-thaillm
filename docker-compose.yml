@@ -3,7 +3,7 @@ version: '3.8'
 services:
   smart-court-ai:
     build: .
-    container_name: smart_court_ai
+    container_name: chatbot_thaillm
     restart: always
     ports:
       - "8502:8501" # Map host port 8502 to container port 8501
